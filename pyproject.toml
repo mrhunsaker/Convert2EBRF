@@ -1,7 +1,7 @@
 [project]
-name = ""
-version = ""
-description = ""
+name = "Convert2EBRF"
+version = "1.0.0"
+description = "Tool for converting files to EBRF"
 authors = [
     {name = "Michael Whapples", email = "mwhapples@aim.com"},
 ]
@@ -13,3 +13,5 @@ requires-python = ">=3.11,<3.12"
 readme = "README.md"
 license = {text = "MIT"}
 
+[project.gui-scripts]
+convert2ebrf = "convert2ebrf.__main__:main"
