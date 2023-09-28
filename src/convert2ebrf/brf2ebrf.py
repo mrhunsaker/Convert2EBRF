@@ -15,8 +15,8 @@ class Brf2EbrfWidget(QWidget):
         layout.add_row("Image directory", self.image_dir_edit)
         layout.add_row("Output EBRF", QLineEdit(self))
         self.layout = layout
-        self.update_include_images_state_changed()
-        self.include_images_checkbox.stateChanged.connect(self.update_include_images_state_changed)
+        self.update_include_images_state()
+        self.include_images_checkbox.stateChanged.connect(self.update_include_images_state)
 
-    def update_include_images_state_changed(self):
+    def update_include_images_state(self):
         self.image_dir_edit.enabled = self.include_images_checkbox.checked
