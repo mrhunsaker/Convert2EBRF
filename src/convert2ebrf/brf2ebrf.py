@@ -1,8 +1,34 @@
-from PySide6.QtCore import QObject, Slot
+import time
+
+from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
 from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
-    QMessageBox
+    QProgressDialog
+from convert2ebrf.utils import RunnableAdapter
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
+
+
+class ConvertTask(QObject):
+    started = Signal()
+    progress = Signal(int)
+    finished = Signal()
+
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent=parent)
+        self._cancel_requested = False
+
+    def __call__(self, input_brf: str, input_images: str | None, output_ebrf: str):
+        self.started.emit()
+        for i in range(20):
+            print(f"Processing {i}")
+            self.progress.emit(i)
+            time.sleep(1)
+            if self._cancel_requested:
+                break
+        self.finished.emit()
+
+    def cancel(self):
+        self._cancel_requested = True
 
 
 class Brf2EbrfWidget(QWidget):
@@ -74,8 +100,16 @@ class Brf2EbrfDialog(QDialog):
 
     @Slot()
     def on_apply(self):
-        dlg = QMessageBox(self)
-        dlg.window_title = "Converting to EBRF"
-        dlg.text = f"You would be converting {self._brf2ebrf_form.input_brf} to {self._brf2ebrf_form.output_ebrf}"
-        dlg.icon = QMessageBox.Icon.Information
-        dlg.exec()
+        pd = QProgressDialog("Conversion in progress", "Cancel", 0, 20)
+
+        def update_progress(value: int):
+            pd.value = value
+
+        t = ConvertTask(self)
+        pd.canceled.connect(t.cancel)
+        t.started.connect(lambda: update_progress(0))
+        t.progress.connect(update_progress)
+        t.finished.connect(lambda: update_progress(20))
+        QThreadPool.global_instance().start(
+            RunnableAdapter(t, self._brf2ebrf_form.input_brf, self._brf2ebrf_form.image_directory,
+                            self._brf2ebrf_form.output_ebrf))
