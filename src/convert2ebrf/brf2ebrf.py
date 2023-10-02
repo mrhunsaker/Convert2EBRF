@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, Slot
 from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
     QMessageBox
 # noinspection PyUnresolvedReferences
@@ -21,31 +21,40 @@ class Brf2EbrfWidget(QWidget):
         self.update_include_images_state()
         self._include_images_checkbox.stateChanged.connect(self.update_include_images_state)
 
+    @Slot()
     def update_include_images_state(self):
         self._image_dir_edit.enabled = self._include_images_checkbox.checked
+
     @property
     def input_brf(self) -> str:
         return self._input_brf_edit.text
+
     @input_brf.setter
-    def set_input_brf(self, value: str):
+    def input_brf(self, value: str):
         self._input_brf_edit.text = value
+
     @property
     def include_images(self) -> bool:
         return self._include_images_checkbox.checked
+
     @include_images.setter
-    def set_include_images(self, value: bool):
+    def include_images(self, value: bool):
         self._include_images_checkbox.checked = value
+
     @property
     def image_directory(self) -> str:
         return self._image_dir_edit.text
+
     @image_directory.setter
-    def set_image_directory(self, value: str):
+    def image_directory(self, value: str):
         self._image_dir_edit.text = value
+
     @property
     def output_ebrf(self) -> str:
         return self._output_ebrf_edit.text
+
     @output_ebrf.setter
-    def set_output_ebrf(self, value: str):
+    def output_ebrf(self, value: str):
         self._output_ebrf_edit.text = value
 
 
@@ -63,6 +72,7 @@ class Brf2EbrfDialog(QDialog):
         self.button_box.rejected.connect(self.reject)
         convert_button.clicked.connect(self.on_apply)
 
+    @Slot()
     def on_apply(self):
         dlg = QMessageBox(self)
         dlg.window_title = "Converting to EBRF"
