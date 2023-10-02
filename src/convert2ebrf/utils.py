@@ -1,4 +1,4 @@
-from PySide6.QtCore import QRunnable
+from PySide6.QtCore import QRunnable, Slot
 
 
 class RunnableAdapter(QRunnable):
@@ -8,5 +8,6 @@ class RunnableAdapter(QRunnable):
         self.args = args
         self.kwargs = kwargs
 
+    @Slot()
     def run(self):
         self.fn(*self.args, **self.kwargs)
