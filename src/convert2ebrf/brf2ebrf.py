@@ -10,7 +10,7 @@ from __feature__ import snake_case, true_property
 
 class ConvertTask(QObject):
     started = Signal()
-    progress = Signal(int)
+    progress = Signal(float)
     finished = Signal()
 
     def __init__(self, parent: QObject = None):
@@ -19,10 +19,10 @@ class ConvertTask(QObject):
 
     def __call__(self, input_brf: str, input_images: str | None, output_ebrf: str):
         self.started.emit()
-        for i in range(20):
+        for i in range(3000):
             print(f"Processing {i}")
-            self.progress.emit(i)
-            time.sleep(1)
+            self.progress.emit(i/3000)
+            time.sleep(0.01)
             if self._cancel_requested:
                 break
         self.finished.emit()
@@ -100,16 +100,17 @@ class Brf2EbrfDialog(QDialog):
 
     @Slot()
     def on_apply(self):
-        pd = QProgressDialog("Conversion in progress", "Cancel", 0, 20)
+        number_of_steps = 1000
+        pd = QProgressDialog("Conversion in progress", "Cancel", 0, 1000)
 
-        def update_progress(value: int):
-            pd.value = value
+        def update_progress(value: float):
+            pd.value = int(value * number_of_steps)
 
         t = ConvertTask(self)
         pd.canceled.connect(t.cancel)
         t.started.connect(lambda: update_progress(0))
         t.progress.connect(update_progress)
-        t.finished.connect(lambda: update_progress(20))
+        t.finished.connect(lambda: update_progress(1))
         QThreadPool.global_instance().start(
             RunnableAdapter(t, self._brf2ebrf_form.input_brf, self._brf2ebrf_form.image_directory,
                             self._brf2ebrf_form.output_ebrf))
