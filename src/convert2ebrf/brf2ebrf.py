@@ -1,11 +1,12 @@
-import time
-
 from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
 from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
     QProgressDialog
-from convert2ebrf.utils import RunnableAdapter
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
+from brf2ebrf.common import PageLayout, PageNumberPosition
+from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
+
+from convert2ebrf.utils import RunnableAdapter
 
 
 class ConvertTask(QObject):
@@ -19,12 +20,21 @@ class ConvertTask(QObject):
 
     def __call__(self, input_brf: str, input_images: str | None, output_ebrf: str):
         self.started.emit()
-        for i in range(3000):
-            print(f"Processing {i}")
-            self.progress.emit(i/3000)
-            time.sleep(0.01)
-            if self._cancel_requested:
-                break
+        page_layout = PageLayout(
+            braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
+            print_page_number=PageNumberPosition.TOP_RIGHT,
+            cells_per_line=40,
+            lines_per_page=25
+        )
+        parser = create_brf2ebrf_parser(
+            page_layout=page_layout,
+            detect_running_heads=True,
+            brf_path=input_brf,
+            output_path=output_ebrf,
+            images_path=input_images
+        )
+        parser_steps = len(parser)
+        convert_brf2ebrf(input_brf, output_ebrf, parser, progress_callback=lambda x: self.progress.emit(x/parser_steps))
         self.finished.emit()
 
     def cancel(self):
