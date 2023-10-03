@@ -34,7 +34,7 @@ class ConvertTask(QObject):
             images_path=input_images
         )
         parser_steps = len(parser)
-        convert_brf2ebrf(input_brf, output_ebrf, parser, progress_callback=lambda x: self.progress.emit(x/parser_steps))
+        convert_brf2ebrf(input_brf, output_ebrf, parser, progress_callback=lambda x: self.progress.emit(x/parser_steps), is_cancelled=lambda: self._cancel_requested)
         self.finished.emit()
 
     def cancel(self):
