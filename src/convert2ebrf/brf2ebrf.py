@@ -1,6 +1,6 @@
 from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
 from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
-    QProgressDialog
+    QProgressDialog, QMessageBox
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
 from brf2ebrf.common import PageLayout, PageNumberPosition
@@ -111,16 +111,21 @@ class Brf2EbrfDialog(QDialog):
     @Slot()
     def on_apply(self):
         number_of_steps = 1000
-        pd = QProgressDialog("Conversion in progress", "Cancel", 0, 1000)
+        output_ebrf = self._brf2ebrf_form.output_ebrf
+        pd = QProgressDialog("Conversion in progress", "Cancel", 0, number_of_steps)
 
         def update_progress(value: float):
             pd.value = int(value * number_of_steps)
+
+        def finished_converting():
+            update_progress(1)
+            QMessageBox.information(None, "Conversion complete", f"Your file has been converted and {output_ebrf} has been created.")
 
         t = ConvertTask(self)
         pd.canceled.connect(t.cancel)
         t.started.connect(lambda: update_progress(0))
         t.progress.connect(update_progress)
-        t.finished.connect(lambda: update_progress(1))
+        t.finished.connect(finished_converting)
         QThreadPool.global_instance().start(
             RunnableAdapter(t, self._brf2ebrf_form.input_brf, self._brf2ebrf_form.image_directory,
-                            self._brf2ebrf_form.output_ebrf))
+                            output_ebrf))
