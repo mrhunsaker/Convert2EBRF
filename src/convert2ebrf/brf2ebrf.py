@@ -41,7 +41,7 @@ class ConvertTask(QObject):
         self._cancel_requested = True
 
 
-class Brf2EbrfWidget(QWidget):
+class ConversionGeneralSettingsWidget(QWidget):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         layout = QFormLayout()
@@ -94,12 +94,21 @@ class Brf2EbrfWidget(QWidget):
         self._output_ebrf_edit.text = value
 
 
+class ConversionPageSettingsWidget(QWidget):
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent=parent)
+        layout = QFormLayout()
+        self.detect_running_heads_checkbox = QCheckBox(self)
+        layout.add_row("Detect running heads", self.detect_running_heads_checkbox)
+        self.set_layout(layout)
+
+
 class Brf2EbrfDialog(QDialog):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         self.window_title = "Convert BRF to EBRF"
         layout = QVBoxLayout()
-        self._brf2ebrf_form = Brf2EbrfWidget()
+        self._brf2ebrf_form = ConversionGeneralSettingsWidget()
         layout.add_widget(self._brf2ebrf_form)
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         convert_button = self.button_box.add_button("Convert", QDialogButtonBox.ButtonRole.ApplyRole)
