@@ -101,6 +101,7 @@ class ConversionPageSettingsWidget(QWidget):
         super().__init__(parent=parent)
         layout = QFormLayout()
         self._detect_running_heads_checkbox = QCheckBox(self)
+        self._detect_running_heads_checkbox.checked = True
         layout.add_row("Detect running heads", self._detect_running_heads_checkbox)
         self.set_layout(layout)
 
