@@ -1,12 +1,18 @@
 from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
 from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
-    QProgressDialog, QMessageBox, QTabWidget
+    QProgressDialog, QMessageBox, QTabWidget, QSpinBox
+from convert2ebrf.utils import RunnableAdapter
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
 from brf2ebrf.common import PageLayout, PageNumberPosition
 from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
 
-from convert2ebrf.utils import RunnableAdapter
+_DEFAULT_PAGE_LAYOUT = PageLayout(
+    braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
+    print_page_number=PageNumberPosition.TOP_RIGHT,
+    cells_per_line=40,
+    lines_per_page=25
+)
 
 
 class ConvertTask(QObject):
@@ -18,14 +24,9 @@ class ConvertTask(QObject):
         super().__init__(parent=parent)
         self._cancel_requested = False
 
-    def __call__(self, input_brf: str, output_ebrf: str, input_images: str | None, detect_running_heads: bool = True):
+    def __call__(self, input_brf: str, output_ebrf: str, input_images: str | None, detect_running_heads: bool = True,
+                 page_layout: PageLayout = _DEFAULT_PAGE_LAYOUT):
         self.started.emit()
-        page_layout = PageLayout(
-            braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
-            print_page_number=PageNumberPosition.TOP_RIGHT,
-            cells_per_line=40,
-            lines_per_page=25
-        )
         parser = create_brf2ebrf_parser(
             page_layout=page_layout,
             detect_running_heads=detect_running_heads,
@@ -103,6 +104,16 @@ class ConversionPageSettingsWidget(QWidget):
         self._detect_running_heads_checkbox = QCheckBox(self)
         self._detect_running_heads_checkbox.checked = True
         layout.add_row("Detect running heads", self._detect_running_heads_checkbox)
+        self._cells_per_line_spinbox = QSpinBox(parent=self)
+        self._cells_per_line_spinbox.set_range(10, 100)
+        self._cells_per_line_spinbox.single_step = 1
+        self._cells_per_line_spinbox.value = 40
+        layout.add_row("Cells per line", self._cells_per_line_spinbox)
+        self._lines_per_page_spinbox = QSpinBox(parent=self)
+        self._lines_per_page_spinbox.set_range(10, 100)
+        self._lines_per_page_spinbox.value = 25
+        self._lines_per_page_spinbox.single_step = 1
+        layout.add_row("Lines per page", self._lines_per_page_spinbox)
         self.set_layout(layout)
 
     @property
@@ -112,6 +123,22 @@ class ConversionPageSettingsWidget(QWidget):
     @detect_running_heads.setter
     def detect_running_heads(self, value: bool):
         self._detect_running_heads_checkbox.checked = value
+
+    @property
+    def cells_per_line(self) -> int:
+        return self._cells_per_line_spinbox.value
+
+    @cells_per_line.setter
+    def cells_per_line(self, value: int):
+        self._cells_per_line_spinbox.value = value
+
+    @property
+    def lines_per_page(self) -> int:
+        return self._lines_per_page_spinbox.value
+
+    @lines_per_page.setter
+    def lines_per_page(self, value: int):
+        self._lines_per_page_spinbox.value = value
 
 
 class Brf2EbrfDialog(QDialog):
@@ -136,6 +163,12 @@ class Brf2EbrfDialog(QDialog):
     def on_apply(self):
         number_of_steps = 1000
         output_ebrf = self._brf2ebrf_form.output_ebrf
+        page_layout = PageLayout(
+            braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
+            print_page_number=PageNumberPosition.TOP_RIGHT,
+            cells_per_line=self._page_settings_form.cells_per_line,
+            lines_per_page=self._page_settings_form.lines_per_page
+        )
         pd = QProgressDialog("Conversion in progress", "Cancel", 0, number_of_steps)
 
         def update_progress(value: float):
@@ -153,4 +186,5 @@ class Brf2EbrfDialog(QDialog):
         t.finished.connect(finished_converting)
         QThreadPool.global_instance().start(
             RunnableAdapter(t, self._brf2ebrf_form.input_brf, output_ebrf, self._brf2ebrf_form.image_directory,
-                            self._page_settings_form.detect_running_heads))
+                            detect_running_heads=self._page_settings_form.detect_running_heads,
+                            page_layout=page_layout))
