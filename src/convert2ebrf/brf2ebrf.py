@@ -1,6 +1,6 @@
 from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
 from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
-    QProgressDialog, QMessageBox
+    QProgressDialog, QMessageBox, QTabWidget
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
 from brf2ebrf.common import PageLayout, PageNumberPosition
@@ -18,7 +18,7 @@ class ConvertTask(QObject):
         super().__init__(parent=parent)
         self._cancel_requested = False
 
-    def __call__(self, input_brf: str, input_images: str | None, output_ebrf: str):
+    def __call__(self, input_brf: str, output_ebrf: str, input_images: str | None, detect_running_heads: bool = True):
         self.started.emit()
         page_layout = PageLayout(
             braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
@@ -28,13 +28,15 @@ class ConvertTask(QObject):
         )
         parser = create_brf2ebrf_parser(
             page_layout=page_layout,
-            detect_running_heads=True,
+            detect_running_heads=detect_running_heads,
             brf_path=input_brf,
             output_path=output_ebrf,
             images_path=input_images
         )
         parser_steps = len(parser)
-        convert_brf2ebrf(input_brf, output_ebrf, parser, progress_callback=lambda x: self.progress.emit(x/parser_steps), is_cancelled=lambda: self._cancel_requested)
+        convert_brf2ebrf(input_brf, output_ebrf, parser,
+                         progress_callback=lambda x: self.progress.emit(x / parser_steps),
+                         is_cancelled=lambda: self._cancel_requested)
         self.finished.emit()
 
     def cancel(self):
@@ -98,18 +100,30 @@ class ConversionPageSettingsWidget(QWidget):
     def __init__(self, parent: QObject = None):
         super().__init__(parent=parent)
         layout = QFormLayout()
-        self.detect_running_heads_checkbox = QCheckBox(self)
-        layout.add_row("Detect running heads", self.detect_running_heads_checkbox)
+        self._detect_running_heads_checkbox = QCheckBox(self)
+        layout.add_row("Detect running heads", self._detect_running_heads_checkbox)
         self.set_layout(layout)
+
+    @property
+    def detect_running_heads(self) -> bool:
+        return self._detect_running_heads_checkbox.checked
+
+    @detect_running_heads.setter
+    def detect_running_heads(self, value: bool):
+        self._detect_running_heads_checkbox.checked = value
 
 
 class Brf2EbrfDialog(QDialog):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         self.window_title = "Convert BRF to EBRF"
+        tab_widget = QTabWidget(parent=self)
+        self._brf2ebrf_form = ConversionGeneralSettingsWidget(parent=self)
+        tab_widget.add_tab(self._brf2ebrf_form, "General")
+        self._page_settings_form = ConversionPageSettingsWidget(parent=self)
+        tab_widget.add_tab(self._page_settings_form, "Page settings")
         layout = QVBoxLayout()
-        self._brf2ebrf_form = ConversionGeneralSettingsWidget()
-        layout.add_widget(self._brf2ebrf_form)
+        layout.add_widget(tab_widget)
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         convert_button = self.button_box.add_button("Convert", QDialogButtonBox.ButtonRole.ApplyRole)
         layout.add_widget(self.button_box)
@@ -128,7 +142,8 @@ class Brf2EbrfDialog(QDialog):
 
         def finished_converting():
             update_progress(1)
-            QMessageBox.information(None, "Conversion complete", f"Your file has been converted and {output_ebrf} has been created.")
+            QMessageBox.information(None, "Conversion complete",
+                                    f"Your file has been converted and {output_ebrf} has been created.")
 
         t = ConvertTask(self)
         pd.canceled.connect(t.cancel)
@@ -136,5 +151,5 @@ class Brf2EbrfDialog(QDialog):
         t.progress.connect(update_progress)
         t.finished.connect(finished_converting)
         QThreadPool.global_instance().start(
-            RunnableAdapter(t, self._brf2ebrf_form.input_brf, self._brf2ebrf_form.image_directory,
-                            output_ebrf))
+            RunnableAdapter(t, self._brf2ebrf_form.input_brf, output_ebrf, self._brf2ebrf_form.image_directory,
+                            self._page_settings_form.detect_running_heads))
