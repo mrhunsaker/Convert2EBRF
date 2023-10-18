@@ -153,7 +153,11 @@ class Brf2EbrfDialog(QDialog):
         layout = QVBoxLayout()
         layout.add_widget(tab_widget)
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        b = self.button_box.button(QDialogButtonBox.StandardButton.Close)
+        b.default = False
+        b.auto_default = False
         convert_button = self.button_box.add_button("Convert", QDialogButtonBox.ButtonRole.ApplyRole)
+        convert_button.default = True
         layout.add_widget(self.button_box)
         self.set_layout(layout)
         self.button_box.rejected.connect(self.reject)
