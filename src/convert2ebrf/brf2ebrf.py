@@ -50,7 +50,9 @@ class ConvertTask(QObject):
                 convert_brf2ebrf(brf, temp_file, parser,
                                  progress_callback=lambda x: self.progress.emit(index, x / parser_steps),
                                  is_cancelled=lambda: self._cancel_requested)
-            shutil.make_archive(output_ebrf, "zip", temp_dir)
+            with TemporaryDirectory() as out_temp_dir:
+                temp_ebrf = shutil.make_archive("output_ebrf", "zip", temp_dir)
+                shutil.copyfile(temp_ebrf, output_ebrf)
         self.finished.emit()
 
     def cancel(self):
