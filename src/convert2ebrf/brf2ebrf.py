@@ -1,4 +1,8 @@
+import os
 import pathlib
+import shutil
+from collections.abc import Iterable
+from tempfile import TemporaryDirectory
 
 from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
 from PySide6.QtWidgets import QWidget, QFormLayout, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
@@ -21,27 +25,32 @@ _DEFAULT_PAGE_LAYOUT = PageLayout(
 
 class ConvertTask(QObject):
     started = Signal()
-    progress = Signal(float)
+    progress = Signal(int, float)
     finished = Signal()
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent=parent)
         self._cancel_requested = False
 
-    def __call__(self, input_brf: str, output_ebrf: str, input_images: str | None, detect_running_heads: bool = True,
+    def __call__(self, input_brf_list: Iterable[str], output_ebrf: str, input_images: str | None,
+                 detect_running_heads: bool = True,
                  page_layout: PageLayout = _DEFAULT_PAGE_LAYOUT):
         self.started.emit()
-        parser = create_brf2ebrf_parser(
-            page_layout=page_layout,
-            detect_running_heads=detect_running_heads,
-            brf_path=input_brf,
-            output_path=output_ebrf,
-            images_path=input_images
-        )
-        parser_steps = len(parser)
-        convert_brf2ebrf(input_brf, output_ebrf, parser,
-                         progress_callback=lambda x: self.progress.emit(x / parser_steps),
-                         is_cancelled=lambda: self._cancel_requested)
+        with TemporaryDirectory() as temp_dir:
+            for index, brf in enumerate(input_brf_list):
+                temp_file = os.path.join(temp_dir, f"vol{index}.xml")
+                parser = create_brf2ebrf_parser(
+                    page_layout=page_layout,
+                    detect_running_heads=detect_running_heads,
+                    brf_path=brf,
+                    output_path=temp_file,
+                    images_path=input_images
+                )
+                parser_steps = len(parser)
+                convert_brf2ebrf(brf, temp_file, parser,
+                                 progress_callback=lambda x: self.progress.emit(index, x / parser_steps),
+                                 is_cancelled=lambda: self._cancel_requested)
+            shutil.make_archive(output_ebrf, "zip", temp_dir)
         self.finished.emit()
 
     def cancel(self):
@@ -172,6 +181,8 @@ class Brf2EbrfDialog(QDialog):
     @Slot()
     def on_apply(self):
         number_of_steps = 1000
+        brf_list = [self._brf2ebrf_form.input_brf]
+        num_of_inputs = len(brf_list)
         output_ebrf = self._brf2ebrf_form.output_ebrf
         page_layout = PageLayout(
             braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
@@ -192,9 +203,9 @@ class Brf2EbrfDialog(QDialog):
         t = ConvertTask(self)
         pd.canceled.connect(t.cancel)
         t.started.connect(lambda: update_progress(0))
-        t.progress.connect(update_progress)
+        t.progress.connect(lambda i, p: update_progress((i + p) / num_of_inputs))
         t.finished.connect(finished_converting)
         QThreadPool.global_instance().start(
-            RunnableAdapter(t, self._brf2ebrf_form.input_brf, output_ebrf, self._brf2ebrf_form.image_directory,
+            RunnableAdapter(t, brf_list, output_ebrf, self._brf2ebrf_form.image_directory,
                             detect_running_heads=self._page_settings_form.detect_running_heads,
                             page_layout=page_layout))
