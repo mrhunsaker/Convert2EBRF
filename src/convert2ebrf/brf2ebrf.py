@@ -7,6 +7,8 @@ from __feature__ import snake_case, true_property
 from brf2ebrf.common import PageLayout, PageNumberPosition
 from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
 
+from convert2ebrf.widgets import DirectoryPickerWidget
+
 _DEFAULT_PAGE_LAYOUT = PageLayout(
     braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
     print_page_number=PageNumberPosition.TOP_RIGHT,
@@ -52,16 +54,16 @@ class ConversionGeneralSettingsWidget(QWidget):
         layout.add_row("Input BRF", self._input_brf_edit)
         self._include_images_checkbox = QCheckBox(self)
         layout.add_row("Include images", self._include_images_checkbox)
-        self._image_dir_edit = QLineEdit(self)
+        self._image_dir_edit = DirectoryPickerWidget(self)
         layout.add_row("Image directory", self._image_dir_edit)
         self._output_ebrf_edit = QLineEdit(self)
         layout.add_row("Output EBRF", self._output_ebrf_edit)
         self.set_layout(layout)
-        self.update_include_images_state()
-        self._include_images_checkbox.stateChanged.connect(self.update_include_images_state)
+        self._update_include_images_state()
+        self._include_images_checkbox.stateChanged.connect(self._update_include_images_state)
 
     @Slot()
-    def update_include_images_state(self):
+    def _update_include_images_state(self):
         self._image_dir_edit.enabled = self._include_images_checkbox.checked
 
     @property
@@ -82,11 +84,11 @@ class ConversionGeneralSettingsWidget(QWidget):
 
     @property
     def image_directory(self) -> str:
-        return self._image_dir_edit.text
+        return self._image_dir_edit.directory_name
 
     @image_directory.setter
     def image_directory(self, value: str):
-        self._image_dir_edit.text = value
+        self._image_dir_edit.directory_name = value
 
     @property
     def output_ebrf(self) -> str:
