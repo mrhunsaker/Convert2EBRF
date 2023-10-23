@@ -49,16 +49,15 @@ class ConvertTask(QObject):
 class ConversionGeneralSettingsWidget(QWidget):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
-        layout = QFormLayout()
-        self._input_brf_edit = QLineEdit(self)
+        layout = QFormLayout(self)
+        self._input_brf_edit = QLineEdit()
         layout.add_row("Input BRF", self._input_brf_edit)
-        self._include_images_checkbox = QCheckBox(self)
+        self._include_images_checkbox = QCheckBox()
         layout.add_row("Include images", self._include_images_checkbox)
-        self._image_dir_edit = DirectoryPickerWidget(self)
+        self._image_dir_edit = DirectoryPickerWidget()
         layout.add_row("Image directory", self._image_dir_edit)
-        self._output_ebrf_edit = QLineEdit(self)
+        self._output_ebrf_edit = QLineEdit()
         layout.add_row("Output EBRF", self._output_ebrf_edit)
-        self.set_layout(layout)
         self._update_include_images_state()
         self._include_images_checkbox.stateChanged.connect(self._update_include_images_state)
 
@@ -102,21 +101,20 @@ class ConversionGeneralSettingsWidget(QWidget):
 class ConversionPageSettingsWidget(QWidget):
     def __init__(self, parent: QObject = None):
         super().__init__(parent=parent)
-        layout = QFormLayout()
-        self._detect_running_heads_checkbox = QCheckBox(self)
+        layout = QFormLayout(self)
+        self._detect_running_heads_checkbox = QCheckBox()
         self._detect_running_heads_checkbox.checked = True
         layout.add_row("Detect running heads", self._detect_running_heads_checkbox)
-        self._cells_per_line_spinbox = QSpinBox(parent=self)
+        self._cells_per_line_spinbox = QSpinBox()
         self._cells_per_line_spinbox.set_range(10, 100)
         self._cells_per_line_spinbox.single_step = 1
         self._cells_per_line_spinbox.value = 40
         layout.add_row("Cells per line", self._cells_per_line_spinbox)
-        self._lines_per_page_spinbox = QSpinBox(parent=self)
+        self._lines_per_page_spinbox = QSpinBox()
         self._lines_per_page_spinbox.set_range(10, 100)
         self._lines_per_page_spinbox.value = 25
         self._lines_per_page_spinbox.single_step = 1
         layout.add_row("Lines per page", self._lines_per_page_spinbox)
-        self.set_layout(layout)
 
     @property
     def detect_running_heads(self) -> bool:
@@ -147,12 +145,12 @@ class Brf2EbrfDialog(QDialog):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         self.window_title = "Convert BRF to EBRF"
-        tab_widget = QTabWidget(parent=self)
-        self._brf2ebrf_form = ConversionGeneralSettingsWidget(parent=self)
+        tab_widget = QTabWidget()
+        self._brf2ebrf_form = ConversionGeneralSettingsWidget()
         tab_widget.add_tab(self._brf2ebrf_form, "General")
-        self._page_settings_form = ConversionPageSettingsWidget(parent=self)
+        self._page_settings_form = ConversionPageSettingsWidget()
         tab_widget.add_tab(self._page_settings_form, "Page settings")
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
         layout.add_widget(tab_widget)
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         b = self.button_box.button(QDialogButtonBox.StandardButton.Close)
@@ -161,7 +159,6 @@ class Brf2EbrfDialog(QDialog):
         convert_button = self.button_box.add_button("Convert", QDialogButtonBox.ButtonRole.ApplyRole)
         convert_button.default = True
         layout.add_widget(self.button_box)
-        self.set_layout(layout)
         self.button_box.rejected.connect(self.reject)
         convert_button.clicked.connect(self.on_apply)
 
