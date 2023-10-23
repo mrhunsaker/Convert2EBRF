@@ -1,13 +1,15 @@
+import pathlib
+
 from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
-from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
-    QProgressDialog, QMessageBox, QTabWidget, QSpinBox
-from convert2ebrf.utils import RunnableAdapter
+from PySide6.QtWidgets import QWidget, QFormLayout, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
+    QProgressDialog, QMessageBox, QTabWidget, QSpinBox, QFileDialog
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
 from brf2ebrf.common import PageLayout, PageNumberPosition
 from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
 
-from convert2ebrf.widgets import DirectoryPickerWidget
+from convert2ebrf.utils import RunnableAdapter
+from convert2ebrf.widgets import FilePickerWidget
 
 _DEFAULT_PAGE_LAYOUT = PageLayout(
     braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
@@ -50,13 +52,18 @@ class ConversionGeneralSettingsWidget(QWidget):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         layout = QFormLayout(self)
-        self._input_brf_edit = QLineEdit()
+        self._input_brf_edit = FilePickerWidget(
+            lambda x: QFileDialog.get_open_file_name(parent=x, dir=str(pathlib.Path.home()),
+                                                     filter="Braille Ready Files (*.brf)")[0])
         layout.add_row("Input BRF", self._input_brf_edit)
         self._include_images_checkbox = QCheckBox()
         layout.add_row("Include images", self._include_images_checkbox)
-        self._image_dir_edit = DirectoryPickerWidget()
+        self._image_dir_edit = FilePickerWidget(
+            lambda x: QFileDialog.get_existing_directory(parent=x, dir=str(pathlib.Path.home())))
         layout.add_row("Image directory", self._image_dir_edit)
-        self._output_ebrf_edit = QLineEdit()
+        self._output_ebrf_edit = FilePickerWidget(lambda x:
+                                                  QFileDialog.get_save_file_name(parent=x, dir=str(pathlib.Path.home()),
+                                                                                 filter="eBraille Files (*.ebrf)")[0])
         layout.add_row("Output EBRF", self._output_ebrf_edit)
         self._update_include_images_state()
         self._include_images_checkbox.stateChanged.connect(self._update_include_images_state)
@@ -67,11 +74,11 @@ class ConversionGeneralSettingsWidget(QWidget):
 
     @property
     def input_brf(self) -> str:
-        return self._input_brf_edit.text
+        return self._input_brf_edit.file_name
 
     @input_brf.setter
     def input_brf(self, value: str):
-        self._input_brf_edit.text = value
+        self._input_brf_edit.file_name = value
 
     @property
     def include_images(self) -> bool:
@@ -83,15 +90,15 @@ class ConversionGeneralSettingsWidget(QWidget):
 
     @property
     def image_directory(self) -> str:
-        return self._image_dir_edit.directory_name
+        return self._image_dir_edit.file_name
 
     @image_directory.setter
     def image_directory(self, value: str):
-        self._image_dir_edit.directory_name = value
+        self._image_dir_edit.file_name = value
 
     @property
     def output_ebrf(self) -> str:
-        return self._output_ebrf_edit.text
+        return self._output_ebrf_edit.file_name
 
     @output_ebrf.setter
     def output_ebrf(self, value: str):
