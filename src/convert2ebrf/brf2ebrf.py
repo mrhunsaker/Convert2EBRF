@@ -80,15 +80,17 @@ class ConversionGeneralSettingsWidget(QWidget):
                                                   QFileDialog.get_save_file_name(parent=x, dir=str(pathlib.Path.home()),
                                                                                  filter="eBraille Files (*.ebrf)")[0])
         layout.add_row("Output EBRF", self._output_ebrf_edit)
-        self._update_include_images_state()
-        self._include_images_checkbox.stateChanged.connect(self._update_include_images_state)
+        self._update_include_images_state(self._include_images_checkbox.checked)
+        self._include_images_checkbox.toggled.connect(self._update_include_images_state)
         self._input_brf_edit.fileChanged.connect(self.inputBrfChanged.emit)
         self._image_dir_edit.fileChanged.connect(self.imagesDirectoryChanged.emit)
         self._output_ebrf_edit.fileChanged.connect(self.outputEbrfChanged.emit)
 
-    @Slot()
-    def _update_include_images_state(self):
-        self._image_dir_edit.enabled = self._include_images_checkbox.checked
+    @Slot(bool)
+    def _update_include_images_state(self, checked: bool):
+        self._image_dir_edit.enabled = checked
+        if not checked:
+            self._image_dir_edit.file_name = ""
 
     @property
     def input_brf(self) -> str:
@@ -99,20 +101,16 @@ class ConversionGeneralSettingsWidget(QWidget):
         self._input_brf_edit.file_name = value
 
     @property
-    def include_images(self) -> bool:
-        return self._include_images_checkbox.checked
-
-    @include_images.setter
-    def include_images(self, value: bool):
-        self._include_images_checkbox.checked = value
-
-    @property
-    def image_directory(self) -> str:
-        return self._image_dir_edit.file_name
+    def image_directory(self) -> str | None:
+        return self._image_dir_edit.file_name if self._include_images_checkbox.checked else None
 
     @image_directory.setter
-    def image_directory(self, value: str):
-        self._image_dir_edit.file_name = value
+    def image_directory(self, value: str | None):
+        if value is None:
+            self._include_images_checkbox.checked = False
+        else:
+            self._include_images_checkbox.checked = True
+            self._image_dir_edit.file_name = value
 
     @property
     def output_ebrf(self) -> str:
