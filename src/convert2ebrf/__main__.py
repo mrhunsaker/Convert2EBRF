@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QApplication
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
 
-from convert2ebrf.brf2ebrf import Brf2EbrfDialog
+from convert2ebrf.brf_to_ebrf import Brf2EbrfDialog
 
 
 def run_app(args: Sequence[str]):
