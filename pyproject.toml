@@ -11,7 +11,7 @@ dependencies = [
 ]
 requires-python = ">=3.11,<3.12"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "GPL-3[0-or-later"}
 
 [project.gui-scripts]
 convert2ebrf = "convert2ebrf.__main__:main"
