@@ -15,3 +15,12 @@ license = {text = "GPL-3[0-or-later"}
 
 [project.gui-scripts]
 convert2ebrf = "convert2ebrf.__main__:main"
+
+[tool.pdm.dev-dependencies]
+exe = [
+    "nuitka>=1.8.4",
+]
+
+
+[tool.pdm.scripts]
+build_exe = "python -m nuitka --standalone --enable-plugins=pyside6 --disable-console {args} Convert2EBRF.pyw"
