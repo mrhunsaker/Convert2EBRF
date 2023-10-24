@@ -186,11 +186,21 @@ class Brf2EbrfDialog(QDialog):
         b = self.button_box.button(QDialogButtonBox.StandardButton.Close)
         b.default = False
         b.auto_default = False
-        convert_button = self.button_box.add_button("Convert", QDialogButtonBox.ButtonRole.ApplyRole)
-        convert_button.default = True
+        self._convert_button = self.button_box.add_button("Convert", QDialogButtonBox.ButtonRole.ApplyRole)
+        self._convert_button.default = True
         layout.add_widget(self.button_box)
+        self._update_validity()
         self.button_box.rejected.connect(self.reject)
-        convert_button.clicked.connect(self.on_apply)
+        self._convert_button.clicked.connect(self.on_apply)
+        self._brf2ebrf_form.inputBrfChanged.connect(lambda x: self._update_validity())
+        self._brf2ebrf_form.imagesDirectoryChanged.connect(lambda x: self._update_validity())
+        self._brf2ebrf_form.outputEbrfChanged.connect(lambda x: self._update_validity())
+
+    @Slot()
+    def _update_validity(self):
+        general_settings = self._brf2ebrf_form
+        self._convert_button.enabled = "" not in [general_settings.input_brf, general_settings.image_directory,
+                                                  general_settings.output_ebrf]
 
     @Slot()
     def on_apply(self):
