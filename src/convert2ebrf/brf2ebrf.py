@@ -51,7 +51,7 @@ class ConvertTask(QObject):
                                  progress_callback=lambda x: self.progress.emit(index, x / parser_steps),
                                  is_cancelled=lambda: self._cancel_requested)
             with TemporaryDirectory() as out_temp_dir:
-                temp_ebrf = shutil.make_archive("output_ebrf", "zip", temp_dir)
+                temp_ebrf = shutil.make_archive(os.path.join(out_temp_dir, "output_ebrf"), "zip", temp_dir)
                 shutil.copyfile(temp_ebrf, output_ebrf)
         self.finished.emit()
 
@@ -60,6 +60,10 @@ class ConvertTask(QObject):
 
 
 class ConversionGeneralSettingsWidget(QWidget):
+    inputBrfChanged = Signal(str)
+    imagesDirectoryChanged = Signal(str)
+    outputEbrfChanged = Signal(str)
+
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         layout = QFormLayout(self)
@@ -78,6 +82,9 @@ class ConversionGeneralSettingsWidget(QWidget):
         layout.add_row("Output EBRF", self._output_ebrf_edit)
         self._update_include_images_state()
         self._include_images_checkbox.stateChanged.connect(self._update_include_images_state)
+        self._input_brf_edit.fileChanged.connect(self.inputBrfChanged.emit)
+        self._image_dir_edit.fileChanged.connect(self.imagesDirectoryChanged.emit)
+        self._output_ebrf_edit.fileChanged.connect(self.outputEbrfChanged.emit)
 
     @Slot()
     def _update_include_images_state(self):
@@ -117,6 +124,10 @@ class ConversionGeneralSettingsWidget(QWidget):
 
 
 class ConversionPageSettingsWidget(QWidget):
+    detectRunningHeadsChanged = Signal(bool)
+    cellsPerLineChanged = Signal(int)
+    linesPerPageChanged = Signal(int)
+
     def __init__(self, parent: QObject = None):
         super().__init__(parent=parent)
         layout = QFormLayout(self)
@@ -133,6 +144,9 @@ class ConversionPageSettingsWidget(QWidget):
         self._lines_per_page_spinbox.value = 25
         self._lines_per_page_spinbox.single_step = 1
         layout.add_row("Lines per page", self._lines_per_page_spinbox)
+        self._detect_running_heads_checkbox.toggled.connect(self.detectRunningHeadsChanged.emit)
+        self._cells_per_line_spinbox.valueChanged.connect(self.cellsPerLineChanged.emit)
+        self._lines_per_page_spinbox.valueChanged.connect(self.linesPerPageChanged.emit)
 
     @property
     def detect_running_heads(self) -> bool:
