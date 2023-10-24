@@ -15,6 +15,8 @@ class FilePickerWidget(QWidget):
         file_name_edit = QLineEdit()
         file_name_edit.read_only = True
         browse_button = QPushButton("Browse...")
+        browse_button.auto_default = False
+        browse_button.default = False
         layout = QHBoxLayout(self)
         layout.add_widget(file_name_edit)
         layout.add_widget(browse_button)
