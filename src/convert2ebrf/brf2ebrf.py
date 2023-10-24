@@ -68,8 +68,8 @@ class ConversionGeneralSettingsWidget(QWidget):
         super().__init__(parent)
         layout = QFormLayout(self)
         self._input_brf_edit = FilePickerWidget(
-            lambda x: QFileDialog.get_open_file_name(parent=x, dir=str(pathlib.Path.home()),
-                                                     filter="Braille Ready Files (*.brf)")[0])
+            lambda x: os.path.pathsep.join(QFileDialog.get_open_file_names(parent=x, dir=str(pathlib.Path.home()),
+                                                                           filter="Braille Ready Files (*.brf)")[0]))
         layout.add_row("Input BRF", self._input_brf_edit)
         self._include_images_checkbox = QCheckBox()
         layout.add_row("Include images", self._include_images_checkbox)
@@ -205,7 +205,7 @@ class Brf2EbrfDialog(QDialog):
     @Slot()
     def on_apply(self):
         number_of_steps = 1000
-        brf_list = [self._brf2ebrf_form.input_brf]
+        brf_list = self._brf2ebrf_form.input_brf.split(os.path.pathsep)
         num_of_inputs = len(brf_list)
         output_ebrf = self._brf2ebrf_form.output_ebrf
         page_layout = PageLayout(
