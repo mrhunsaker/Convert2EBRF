@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QWidget, QFormLayout, QCheckBox, QDialog, QDialogB
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
 from brf2ebrf.common import PageLayout, PageNumberPosition
-from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
+from brf2ebrf.scripts.to_ebrf import create_brf2ebrf_parser, convert_brf2ebrf
 
 from convert2ebrf.utils import RunnableAdapter
 from convert2ebrf.widgets import FilePickerWidget
