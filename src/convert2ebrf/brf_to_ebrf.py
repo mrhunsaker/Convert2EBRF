@@ -217,6 +217,11 @@ class Brf2EbrfDialog(QDialog):
         brf_list = self._brf2ebrf_form.input_brf.split(os.path.pathsep)
         num_of_inputs = len(brf_list)
         output_ebrf = self._brf2ebrf_form.output_ebrf
+        if os.path.exists(output_ebrf):
+            overwrite_result = QMessageBox.question(self, "Overwrite existing file?",
+                                            f"The output file {output_ebrf} already exists, do you want to overwrite it?")
+            if overwrite_result == QMessageBox.StandardButton.No:
+                return
         page_layout = PageLayout(
             braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
             print_page_number=PageNumberPosition.TOP_RIGHT,
