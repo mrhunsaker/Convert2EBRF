@@ -27,6 +27,8 @@ class ConvertTask(QObject):
     started = Signal()
     progress = Signal(int, float)
     finished = Signal()
+    cancelled = Signal()
+    errorRaised = Signal(Exception)
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent=parent)
@@ -36,25 +38,31 @@ class ConvertTask(QObject):
                  detect_running_heads: bool = True,
                  page_layout: PageLayout = _DEFAULT_PAGE_LAYOUT):
         self.started.emit()
-        with TemporaryDirectory() as temp_dir:
-            os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
-            for index, brf in enumerate(input_brf_list):
-                temp_file = os.path.join(temp_dir, f"vol{index}.xml")
-                parser = create_brf2ebrf_parser(
-                    page_layout=page_layout,
-                    detect_running_heads=detect_running_heads,
-                    brf_path=brf,
-                    output_path=temp_file,
-                    images_path=input_images
-                )
-                parser_steps = len(parser)
-                convert_brf2ebrf(brf, temp_file, parser,
-                                 progress_callback=lambda x: self.progress.emit(index, x / parser_steps),
-                                 is_cancelled=lambda: self._cancel_requested)
-            with TemporaryDirectory() as out_temp_dir:
-                temp_ebrf = shutil.make_archive(os.path.join(out_temp_dir, "output_ebrf"), "zip", temp_dir)
-                shutil.copyfile(temp_ebrf, output_ebrf)
-        self.finished.emit()
+        try:
+            with TemporaryDirectory() as temp_dir:
+                os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
+                for index, brf in enumerate(input_brf_list):
+                    temp_file = os.path.join(temp_dir, f"vol{index}.xml")
+                    parser = create_brf2ebrf_parser(
+                        page_layout=page_layout,
+                        detect_running_heads=detect_running_heads,
+                        brf_path=brf,
+                        output_path=temp_file,
+                        images_path=input_images
+                    )
+                    parser_steps = len(parser)
+                    convert_brf2ebrf(brf, temp_file, parser,
+                                     progress_callback=lambda x: self.progress.emit(index, x / parser_steps),
+                                     is_cancelled=lambda: self._cancel_requested)
+                    if self._cancel_requested:
+                        self.cancelled.emit()
+                        return
+                with TemporaryDirectory() as out_temp_dir:
+                    temp_ebrf = shutil.make_archive(os.path.join(out_temp_dir, "output_ebrf"), "zip", temp_dir)
+                    shutil.copyfile(temp_ebrf, output_ebrf)
+            self.finished.emit()
+        except Exception as e:
+            self.errorRaised.emit(e)
 
     def cancel(self):
         self._cancel_requested = True
@@ -224,12 +232,16 @@ class Brf2EbrfDialog(QDialog):
             update_progress(1)
             QMessageBox.information(None, "Conversion complete",
                                     f"Your file has been converted and {output_ebrf} has been created.")
+        def error_raised(error: Exception):
+            pd.cancel()
+            QMessageBox.critical(None, "Error encountered", f"Encountered an error\n{error}")
 
         t = ConvertTask(self)
         pd.canceled.connect(t.cancel)
         t.started.connect(lambda: update_progress(0))
         t.progress.connect(lambda i, p: update_progress((i + p) / num_of_inputs))
         t.finished.connect(finished_converting)
+        t.errorRaised.connect(error_raised)
         QThreadPool.global_instance().start(
             RunnableAdapter(t, brf_list, output_ebrf, self._brf2ebrf_form.image_directory,
                             detect_running_heads=self._page_settings_form.detect_running_heads,
