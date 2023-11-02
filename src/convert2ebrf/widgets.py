@@ -14,6 +14,7 @@ class FilePickerWidget(QWidget):
         self._browse_func = browse_func
         file_name_edit = QLineEdit()
         file_name_edit.read_only = True
+        file_name_edit.minimum_width = 400
         browse_button = QPushButton("Browse...")
         browse_button.auto_default = False
         browse_button.default = False
