@@ -1,16 +1,16 @@
 import os
-from pathlib import Path
 import shutil
 from collections.abc import Iterable
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from PySide6.QtCore import QObject, Slot, Signal, QThreadPool
 from PySide6.QtWidgets import QWidget, QFormLayout, QCheckBox, QDialog, QDialogButtonBox, QVBoxLayout, \
-    QProgressDialog, QMessageBox, QTabWidget, QSpinBox, QFileDialog
+    QProgressDialog, QMessageBox, QTabWidget, QSpinBox, QFileDialog, QComboBox
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
-from brf2ebrf.parser import ParsingCancelledException
 from brf2ebrf.common import PageLayout, PageNumberPosition
+from brf2ebrf.parser import ParsingCancelledException
 from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
 
 from convert2ebrf.utils import RunnableAdapter
@@ -84,9 +84,11 @@ class ConversionGeneralSettingsWidget(QWidget):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         layout = QFormLayout(self)
-        self._input_brf_edit = FilePickerWidget(
-            lambda x: os.path.pathsep.join(QFileDialog.get_open_file_names(parent=x, dir=str(Path.home()),
-                                                                           filter="Braille Ready Files (*.brf)")[0]))
+        self._input_type_combo = QComboBox()
+        self._input_type_combo.editable = False
+        self._input_type_combo.add_items(["List of BRF", "Directory of BRF"])
+        layout.add_row("Input type", self._input_type_combo)
+        self._input_brf_edit = FilePickerWidget(self._get_input_brf_from_user)
         layout.add_row("Input BRF", self._input_brf_edit)
         self._include_images_checkbox = QCheckBox()
         layout.add_row("Include images", self._include_images_checkbox)
@@ -101,6 +103,7 @@ class ConversionGeneralSettingsWidget(QWidget):
         layout.add_row("Output EBRF", self._output_ebrf_edit)
         self._update_include_images_state(self._include_images_checkbox.checked)
         self._include_images_checkbox.toggled.connect(self._update_include_images_state)
+        self._input_type_combo.currentIndexChanged.connect(self._clear_input_brf)
         self._input_brf_edit.fileChanged.connect(self.inputBrfChanged.emit)
         self._image_dir_edit.fileChanged.connect(self.imagesDirectoryChanged.emit)
         self._output_ebrf_edit.fileChanged.connect(self.outputEbrfChanged.emit)
@@ -111,13 +114,26 @@ class ConversionGeneralSettingsWidget(QWidget):
         if not checked:
             self._image_dir_edit.file_name = ""
 
+    def _get_input_brf_from_user(self, x):
+        return QFileDialog.get_existing_directory(
+            parent=x, dir=str(Path.home())
+        ) if self._input_type_combo.current_index else os.path.pathsep.join(
+            QFileDialog.get_open_file_names(
+                parent=x, dir=str(Path.home()), filter="Braille Ready Files (*.brf)"
+            )[0]
+        )
+
     @property
     def input_brf(self) -> str:
         return self._input_brf_edit.file_name
 
     @input_brf.setter
     def input_brf(self, value: str):
+        self._input_type_combo.current_index = 1 if os.path.isdir(value) else 0
         self._input_brf_edit.file_name = value
+
+    def _clear_input_brf(self):
+        self._input_brf_edit.file_name = ""
 
     @property
     def image_directory(self) -> str | None:
@@ -224,7 +240,12 @@ class Brf2EbrfDialog(QDialog):
     @Slot()
     def on_apply(self):
         number_of_steps = 1000
-        brf_list = self._brf2ebrf_form.input_brf.split(os.path.pathsep)
+        input_brf_str = self._brf2ebrf_form.input_brf
+        brf_list = [os.path.join(input_brf_str, f) for f in os.listdir(
+            input_brf_str
+        )] if os.path.isdir(input_brf_str) else input_brf_str.split(
+            os.path.pathsep
+        )
         num_of_inputs = len(brf_list)
         output_ebrf = self._brf2ebrf_form.output_ebrf
         if os.path.exists(output_ebrf):
