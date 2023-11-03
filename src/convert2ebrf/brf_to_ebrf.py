@@ -94,8 +94,10 @@ class ConversionGeneralSettingsWidget(QWidget):
             lambda x: QFileDialog.get_existing_directory(parent=x, dir=str(Path.home())))
         layout.add_row("Image directory", self._image_dir_edit)
         self._output_ebrf_edit = FilePickerWidget(lambda x:
-                                                  QFileDialog.get_save_file_name(parent=x, dir=str(Path.home()),
-                                                                                 filter="eBraille Files (*.ebrf)")[0])
+                                                  QFileDialog.get_save_file_name(
+                                                      parent=x, dir=str(Path.home()), filter="eBraille Files (*.ebrf)",
+                                                      options=QFileDialog.Option.DontConfirmOverwrite
+                                                  )[0])
         layout.add_row("Output EBRF", self._output_ebrf_edit)
         self._update_include_images_state(self._include_images_checkbox.checked)
         self._include_images_checkbox.toggled.connect(self._update_include_images_state)
