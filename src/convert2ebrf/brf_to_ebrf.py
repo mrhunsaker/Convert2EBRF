@@ -1,5 +1,5 @@
 import os
-import pathlib
+from pathlib import Path
 import shutil
 from collections.abc import Iterable
 from tempfile import TemporaryDirectory
@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QWidget, QFormLayout, QCheckBox, QDialog, QDialogB
     QProgressDialog, QMessageBox, QTabWidget, QSpinBox, QFileDialog
 # noinspection PyUnresolvedReferences
 from __feature__ import snake_case, true_property
+from brf2ebrf.parser import ParsingCancelledException
 from brf2ebrf.common import PageLayout, PageNumberPosition
 from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
 
@@ -39,15 +40,17 @@ class ConvertTask(QObject):
                  page_layout: PageLayout = _DEFAULT_PAGE_LAYOUT):
         self.started.emit()
         try:
-            if self._convert(input_brf_list, input_images, output_ebrf, detect_running_heads, page_layout):
-                self.finished.emit()
-            else:
-                self.cancelled.emit()
+            self._convert(input_brf_list, input_images, output_ebrf, detect_running_heads, page_layout)
+            self.finished.emit()
+        except ParsingCancelledException:
+            Path(output_ebrf).unlink(missing_ok=True)
+            self.cancelled.emit()
         except Exception as e:
+            Path(output_ebrf).unlink(missing_ok=True)
             self.errorRaised.emit(e)
 
     def _convert(self, input_brf_list: Iterable[str], input_images: str, output_ebrf: str, detect_running_heads: bool,
-                 page_layout: PageLayout) -> bool:
+                 page_layout: PageLayout):
         with open(output_ebrf, "wb") as out_file:
             with TemporaryDirectory() as temp_dir:
                 os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
@@ -64,13 +67,10 @@ class ConvertTask(QObject):
                     convert_brf2ebrf(brf, temp_file, parser,
                                      progress_callback=lambda x: self.progress.emit(index, x / parser_steps),
                                      is_cancelled=lambda: self._cancel_requested)
-                    if self._cancel_requested:
-                        return False
                 with TemporaryDirectory() as out_temp_dir:
                     temp_ebrf = shutil.make_archive(os.path.join(out_temp_dir, "output_ebrf"), "zip", temp_dir)
                     with open(temp_ebrf, "rb") as temp_ebrf_file:
                         shutil.copyfileobj(temp_ebrf_file, out_file)
-        return True
 
     def cancel(self):
         self._cancel_requested = True
@@ -85,16 +85,16 @@ class ConversionGeneralSettingsWidget(QWidget):
         super().__init__(parent)
         layout = QFormLayout(self)
         self._input_brf_edit = FilePickerWidget(
-            lambda x: os.path.pathsep.join(QFileDialog.get_open_file_names(parent=x, dir=str(pathlib.Path.home()),
+            lambda x: os.path.pathsep.join(QFileDialog.get_open_file_names(parent=x, dir=str(Path.home()),
                                                                            filter="Braille Ready Files (*.brf)")[0]))
         layout.add_row("Input BRF", self._input_brf_edit)
         self._include_images_checkbox = QCheckBox()
         layout.add_row("Include images", self._include_images_checkbox)
         self._image_dir_edit = FilePickerWidget(
-            lambda x: QFileDialog.get_existing_directory(parent=x, dir=str(pathlib.Path.home())))
+            lambda x: QFileDialog.get_existing_directory(parent=x, dir=str(Path.home())))
         layout.add_row("Image directory", self._image_dir_edit)
         self._output_ebrf_edit = FilePickerWidget(lambda x:
-                                                  QFileDialog.get_save_file_name(parent=x, dir=str(pathlib.Path.home()),
+                                                  QFileDialog.get_save_file_name(parent=x, dir=str(Path.home()),
                                                                                  filter="eBraille Files (*.ebrf)")[0])
         layout.add_row("Output EBRF", self._output_ebrf_edit)
         self._update_include_images_state(self._include_images_checkbox.checked)
