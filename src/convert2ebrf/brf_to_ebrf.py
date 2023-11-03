@@ -39,6 +39,16 @@ class ConvertTask(QObject):
                  page_layout: PageLayout = _DEFAULT_PAGE_LAYOUT):
         self.started.emit()
         try:
+            if self._convert(input_brf_list, input_images, output_ebrf, detect_running_heads, page_layout):
+                self.finished.emit()
+            else:
+                self.cancelled.emit()
+        except Exception as e:
+            self.errorRaised.emit(e)
+
+    def _convert(self, input_brf_list: Iterable[str], input_images: str, output_ebrf: str, detect_running_heads: bool,
+                 page_layout: PageLayout) -> bool:
+        with open(output_ebrf, "wb") as out_file:
             with TemporaryDirectory() as temp_dir:
                 os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
                 for index, brf in enumerate(input_brf_list):
@@ -55,14 +65,12 @@ class ConvertTask(QObject):
                                      progress_callback=lambda x: self.progress.emit(index, x / parser_steps),
                                      is_cancelled=lambda: self._cancel_requested)
                     if self._cancel_requested:
-                        self.cancelled.emit()
-                        return
+                        return False
                 with TemporaryDirectory() as out_temp_dir:
                     temp_ebrf = shutil.make_archive(os.path.join(out_temp_dir, "output_ebrf"), "zip", temp_dir)
-                    shutil.copyfile(temp_ebrf, output_ebrf)
-            self.finished.emit()
-        except Exception as e:
-            self.errorRaised.emit(e)
+                    with open(temp_ebrf, "rb") as temp_ebrf_file:
+                        shutil.copyfileobj(temp_ebrf_file, out_file)
+        return True
 
     def cancel(self):
         self._cancel_requested = True
@@ -218,8 +226,10 @@ class Brf2EbrfDialog(QDialog):
         num_of_inputs = len(brf_list)
         output_ebrf = self._brf2ebrf_form.output_ebrf
         if os.path.exists(output_ebrf):
-            overwrite_result = QMessageBox.question(self, "Overwrite existing file?",
-                                            f"The output file {output_ebrf} already exists, do you want to overwrite it?")
+            overwrite_result = QMessageBox.question(
+                self, "Overwrite existing file?",
+                f"The output file {output_ebrf} already exists, do you want to overwrite it?"
+            )
             if overwrite_result == QMessageBox.StandardButton.No:
                 return
         page_layout = PageLayout(
@@ -237,6 +247,7 @@ class Brf2EbrfDialog(QDialog):
             update_progress(1)
             QMessageBox.information(None, "Conversion complete",
                                     f"Your file has been converted and {output_ebrf} has been created.")
+
         def error_raised(error: Exception):
             pd.cancel()
             QMessageBox.critical(None, "Error encountered", f"Encountered an error\n{error}")
