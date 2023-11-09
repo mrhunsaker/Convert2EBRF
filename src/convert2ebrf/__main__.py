@@ -10,6 +10,9 @@ from convert2ebrf.brf_to_ebrf import Brf2EbrfDialog
 
 def run_app(args: Sequence[str]):
     app = QApplication(args)
+    app.organization_name = "American Printing House for the Blind"
+    app.organization_domain = "aph.org"
+    app.application_name = "Convert2EBRF"
     w = Brf2EbrfDialog()
     w.show()
     app.exec()
