@@ -16,6 +16,8 @@ from brf2ebrf.scripts.brf2ebrf import create_brf2ebrf_parser, convert_brf2ebrf
 from convert2ebrf.utils import RunnableAdapter
 from convert2ebrf.widgets import FilePickerWidget
 
+_LAST_DIR_SETTING_KEY = "Conversion/last_dir"
+
 _DEFAULT_PAGE_LAYOUT = PageLayout(
     braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
     print_page_number=PageNumberPosition.TOP_RIGHT,
@@ -95,10 +97,10 @@ class ConversionGeneralSettingsWidget(QWidget):
 
         def get_images_dir_from_user(x):
             settings = QSettings()
-            default_dir = settings.value("Conversion/last_dir", str(Path.home()))
+            default_dir = settings.value(_LAST_DIR_SETTING_KEY, str(Path.home()))
             image_dir = QFileDialog.get_existing_directory(parent=x, dir=default_dir)
             if image_dir:
-                settings.set_value("Conversion/last_dir", image_dir)
+                settings.set_value(_LAST_DIR_SETTING_KEY, image_dir)
                 return image_dir
 
         self._image_dir_edit = FilePickerWidget(
@@ -107,13 +109,13 @@ class ConversionGeneralSettingsWidget(QWidget):
 
         def get_output_ebrf_file_from_user(x):
             settings = QSettings()
-            default_dir = settings.value("Conversion/last_dir", str(Path.home()))
+            default_dir = settings.value(_LAST_DIR_SETTING_KEY, str(Path.home()))
             save_path = QFileDialog.get_save_file_name(
                 parent=x, dir=default_dir, filter="eBraille Files (*.ebrf)",
                 options=QFileDialog.Option.DontConfirmOverwrite
             )[0]
             if save_path:
-                settings.set_value("Conversion/last_dir", os.path.dirname(save_path))
+                settings.set_value(_LAST_DIR_SETTING_KEY, os.path.dirname(save_path))
                 return save_path
 
         self._output_ebrf_edit = FilePickerWidget(get_output_ebrf_file_from_user)
@@ -133,20 +135,20 @@ class ConversionGeneralSettingsWidget(QWidget):
 
     def _get_input_brf_from_user(self, x):
         settings = QSettings()
-        default_dir = settings.value("Conversion/last_dir", str(Path.home()))
+        default_dir = settings.value(_LAST_DIR_SETTING_KEY, str(Path.home()))
         if self._input_type_combo.current_index:
             input_dir = QFileDialog.get_existing_directory(
                 parent=x, dir=default_dir
             )
             if input_dir:
-                settings.set_value("Conversion/last_dir", input_dir)
+                settings.set_value(_LAST_DIR_SETTING_KEY, input_dir)
                 return input_dir
         else:
             input_files = QFileDialog.get_open_file_names(
                 parent=x, dir=default_dir, filter="Braille Ready Files (*.brf)"
             )[0]
             if input_files:
-                settings.set_value("Conversion/last_dir", os.path.dirname(input_files[0]))
+                settings.set_value(_LAST_DIR_SETTING_KEY, os.path.dirname(input_files[0]))
                 return os.path.pathsep.join(input_files)
 
     @property
