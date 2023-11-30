@@ -57,7 +57,7 @@ class ConvertTask(QObject):
             with TemporaryDirectory() as temp_dir:
                 os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
                 for index, brf in enumerate(input_brf_list):
-                    temp_file = os.path.join(temp_dir, f"vol{index}.xml")
+                    temp_file = os.path.join(temp_dir, f"vol{index}.xhtml")
                     parser = create_brf2ebrf_parser(
                         page_layout=page_layout,
                         detect_running_heads=detect_running_heads,
