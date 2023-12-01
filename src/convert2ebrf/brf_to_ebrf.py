@@ -19,8 +19,8 @@ from convert2ebrf.widgets import FilePickerWidget
 _LAST_DIR_SETTING_KEY = "Conversion/last_dir"
 
 _DEFAULT_PAGE_LAYOUT = PageLayout(
-    braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
-    print_page_number=PageNumberPosition.TOP_RIGHT,
+    odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
+    odd_print_page_number=PageNumberPosition.TOP_RIGHT,
     cells_per_line=40,
     lines_per_page=25
 )
@@ -284,8 +284,8 @@ class Brf2EbrfDialog(QDialog):
             if overwrite_result == QMessageBox.StandardButton.No:
                 return
         page_layout = PageLayout(
-            braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
-            print_page_number=PageNumberPosition.TOP_RIGHT,
+            odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
+            odd_print_page_number=PageNumberPosition.TOP_RIGHT,
             cells_per_line=self._page_settings_form.cells_per_line,
             lines_per_page=self._page_settings_form.lines_per_page
         )
