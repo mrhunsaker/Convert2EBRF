@@ -184,10 +184,23 @@ class ConversionGeneralSettingsWidget(QWidget):
         self._output_ebrf_edit.text = value
 
 
+_PAGE_NUMBER_POSITIONS_DICT = {
+    PageNumberPosition.NONE: "None",
+    PageNumberPosition.TOP_LEFT: "Top left",
+    PageNumberPosition.TOP_RIGHT: "Top right",
+    PageNumberPosition.BOTTOM_LEFT: "Bottom left",
+    PageNumberPosition.BOTTOM_RIGHT: "Bottom right"
+}
+
+
 class ConversionPageSettingsWidget(QWidget):
     detectRunningHeadsChanged = Signal(bool)
     cellsPerLineChanged = Signal(int)
     linesPerPageChanged = Signal(int)
+    oddBraillePageNumberChanged = Signal(PageNumberPosition)
+    evenBraillePageNumberChanged = Signal(PageNumberPosition)
+    oddPrintPageNumberChanged = Signal(PageNumberPosition)
+    evenPrintPageNumberChanged = Signal(PageNumberPosition)
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent=parent)
@@ -205,9 +218,34 @@ class ConversionPageSettingsWidget(QWidget):
         self._lines_per_page_spinbox.value = 25
         self._lines_per_page_spinbox.single_step = 1
         layout.add_row("Lines per page", self._lines_per_page_spinbox)
+
+        def create_page_number_position_combo(default_selection: PageNumberPosition = PageNumberPosition.NONE):
+            combo = QComboBox()
+            combo.editable = False
+            for p, t in _PAGE_NUMBER_POSITIONS_DICT.items():
+                combo.add_item(t, p)
+            combo.current_text = _PAGE_NUMBER_POSITIONS_DICT[default_selection]
+            return combo
+
+        self._odd_bpn_position = create_page_number_position_combo(PageNumberPosition.BOTTOM_RIGHT)
+        layout.add_row("Odd Braille page number", self._odd_bpn_position)
+        self._even_bpn_position = create_page_number_position_combo()
+        layout.add_row("Even Braille page number", self._even_bpn_position)
+        self._odd_ppn_position = create_page_number_position_combo(PageNumberPosition.TOP_RIGHT)
+        layout.add_row("Odd print page number", self._odd_ppn_position)
+        self._even_ppn_position = create_page_number_position_combo()
+        layout.add_row("Even print page number", self._even_ppn_position)
         self._detect_running_heads_checkbox.toggled.connect(self.detectRunningHeadsChanged.emit)
         self._cells_per_line_spinbox.valueChanged.connect(self.cellsPerLineChanged.emit)
         self._lines_per_page_spinbox.valueChanged.connect(self.linesPerPageChanged.emit)
+        self._odd_bpn_position.currentIndexChanged.connect(
+            lambda x: self.oddBraillePageNumberChanged.emit(self._odd_bpn_position.item_data(x)))
+        self._even_bpn_position.currentIndexChanged.connect(
+            lambda x: self.evenBraillePageNumberChanged.emit(self._even_bpn_position.item_data(x)))
+        self._odd_ppn_position.currentIndexChanged.connect(
+            lambda x: self.oddPrintPageNumberChanged.emit(self._odd_ppn_position.item_data(x)))
+        self._even_ppn_position.currentIndexChanged.connect(
+            lambda x: self.evenPrintPageNumberChanged.emit(self._even_ppn_position.item_data(x)))
 
     @property
     def detect_running_heads(self) -> bool:
@@ -232,6 +270,38 @@ class ConversionPageSettingsWidget(QWidget):
     @lines_per_page.setter
     def lines_per_page(self, value: int):
         self._lines_per_page_spinbox.value = value
+
+    @property
+    def odd_braille_page_number_position(self) -> PageNumberPosition:
+        return self._odd_bpn_position.current_data()
+
+    @odd_braille_page_number_position.setter
+    def odd_braille_page_number_position(self, value: PageNumberPosition):
+        self._odd_bpn_position.current_text = _PAGE_NUMBER_POSITIONS_DICT[value]
+
+    @property
+    def even_braille_page_number_position(self) -> PageNumberPosition:
+        return self._even_bpn_position.current_data()
+
+    @even_braille_page_number_position.setter
+    def even_braille_page_number_position(self, value: PageNumberPosition):
+        self._even_bpn_position.current_text = _PAGE_NUMBER_POSITIONS_DICT[value]
+
+    @property
+    def odd_print_page_number_position(self) -> PageNumberPosition:
+        return self._odd_ppn_position.current_data()
+
+    @odd_print_page_number_position.setter
+    def odd_print_page_number_position(self, value: PageNumberPosition):
+        self._odd_ppn_position.current_text = _PAGE_NUMBER_POSITIONS_DICT[value]
+
+    @property
+    def even_print_page_number_position(self) -> PageNumberPosition:
+        return self._even_ppn_position.current_data()
+
+    @even_print_page_number_position.setter
+    def even_print_page_number_position(self, value: PageNumberPosition):
+        self._even_ppn_position.current_text = _PAGE_NUMBER_POSITIONS_DICT[value]
 
 
 class Brf2EbrfDialog(QDialog):
@@ -284,8 +354,10 @@ class Brf2EbrfDialog(QDialog):
             if overwrite_result == QMessageBox.StandardButton.No:
                 return
         page_layout = PageLayout(
-            odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
-            odd_print_page_number=PageNumberPosition.TOP_RIGHT,
+            odd_braille_page_number=self._page_settings_form.odd_braille_page_number_position,
+            even_braille_page_number=self._page_settings_form.even_braille_page_number_position,
+            odd_print_page_number=self._page_settings_form.odd_print_page_number_position,
+            even_print_page_number=self._page_settings_form.even_print_page_number_position,
             cells_per_line=self._page_settings_form.cells_per_line,
             lines_per_page=self._page_settings_form.lines_per_page
         )
