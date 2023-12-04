@@ -1,3 +1,4 @@
+import logging
 import sys
 from collections.abc import Sequence
 
@@ -9,6 +10,9 @@ from convert2ebrf.brf_to_ebrf import Brf2EbrfDialog
 
 
 def run_app(args: Sequence[str]):
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s:%(asctime)s:%(module)s:%(message)s"
+    )
     app = QApplication(args)
     app.organization_name = "American Printing House for the Blind"
     app.organization_domain = "aph.org"
