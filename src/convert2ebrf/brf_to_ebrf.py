@@ -201,9 +201,11 @@ class ConversionPageSettingsWidget(QWidget):
     evenBraillePageNumberChanged = Signal(PageNumberPosition)
     oddPrintPageNumberChanged = Signal(PageNumberPosition)
     evenPrintPageNumberChanged = Signal(PageNumberPosition)
+    isValidChanged = Signal(bool)
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent=parent)
+        self._is_valid = False
         layout = QFormLayout(self)
         self._detect_running_heads_checkbox = QCheckBox()
         self._detect_running_heads_checkbox.checked = True
@@ -235,17 +237,32 @@ class ConversionPageSettingsWidget(QWidget):
         layout.add_row("Odd print page number", self._odd_ppn_position)
         self._even_ppn_position = create_page_number_position_combo()
         layout.add_row("Even print page number", self._even_ppn_position)
+        self._update_validity()
         self._detect_running_heads_checkbox.toggled.connect(self.detectRunningHeadsChanged.emit)
         self._cells_per_line_spinbox.valueChanged.connect(self.cellsPerLineChanged.emit)
         self._lines_per_page_spinbox.valueChanged.connect(self.linesPerPageChanged.emit)
+        def form_update(change_signal: Signal, value: PageNumberPosition):
+            change_signal.emit(value)
+            self._update_validity()
         self._odd_bpn_position.currentIndexChanged.connect(
-            lambda x: self.oddBraillePageNumberChanged.emit(self._odd_bpn_position.item_data(x)))
+            lambda x: form_update(self.oddBraillePageNumberChanged, self._odd_bpn_position.item_data(x)))
         self._even_bpn_position.currentIndexChanged.connect(
-            lambda x: self.evenBraillePageNumberChanged.emit(self._even_bpn_position.item_data(x)))
+            lambda x: form_update(self.evenBraillePageNumberChanged, self._even_bpn_position.item_data(x)))
         self._odd_ppn_position.currentIndexChanged.connect(
-            lambda x: self.oddPrintPageNumberChanged.emit(self._odd_ppn_position.item_data(x)))
+            lambda x: form_update(self.oddPrintPageNumberChanged, self._odd_ppn_position.item_data(x)))
         self._even_ppn_position.currentIndexChanged.connect(
-            lambda x: self.evenPrintPageNumberChanged.emit(self._even_ppn_position.item_data(x)))
+            lambda x: form_update(self.evenPrintPageNumberChanged, self._even_ppn_position.item_data(x)))
+
+    def _update_validity(self):
+        old_validity = self._is_valid
+        new_validity = (self.odd_braille_page_number_position == PageNumberPosition.NONE or self.odd_braille_page_number_position != self.odd_print_page_number_position) and (self.even_braille_page_number_position == PageNumberPosition.NONE or self.even_braille_page_number_position != self.even_print_page_number_position)
+        if old_validity != new_validity:
+            self._is_valid = new_validity
+            self.isValidChanged.emit(new_validity)
+
+    @property
+    def is_valid(self) -> bool:
+        return self._is_valid
 
     @property
     def detect_running_heads(self) -> bool:
@@ -328,12 +345,14 @@ class Brf2EbrfDialog(QDialog):
         self._brf2ebrf_form.inputBrfChanged.connect(lambda x: self._update_validity())
         self._brf2ebrf_form.imagesDirectoryChanged.connect(lambda x: self._update_validity())
         self._brf2ebrf_form.outputEbrfChanged.connect(lambda x: self._update_validity())
+        self._page_settings_form.isValidChanged.connect(lambda x: self._update_validity())
 
     @Slot()
     def _update_validity(self):
         general_settings = self._brf2ebrf_form
-        self._convert_button.enabled = "" not in [general_settings.input_brf, general_settings.image_directory,
-                                                  general_settings.output_ebrf]
+        is_valid = self._page_settings_form.is_valid and "" not in [general_settings.input_brf, general_settings.image_directory,
+                              general_settings.output_ebrf]
+        self._convert_button.enabled = is_valid
 
     @Slot()
     def on_apply(self):
