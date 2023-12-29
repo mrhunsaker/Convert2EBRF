@@ -21,7 +21,7 @@ jobs:
     - name: Grant access to BRF2EBRF repository
       uses: webfactory/ssh-agent@v0.8.0
       with:
-        ssh-private-key: ${{ secrets.BRF2EBRF_REPO_KEY }}
+          ssh-private-key: ${{ secrets.BRF2EBRF_REPO_KEY }}
     - name: Remap BRF2EBRF repo to ssh
       run: "git config --global url.\"git@github.com:\"insteadOf '"https://github.com/\""
     - uses: actions/checkout@v3
