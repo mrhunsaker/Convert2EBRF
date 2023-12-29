@@ -18,13 +18,13 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    - uses: actions/checkout@v3
     - name: Remap github https to ssh
       run: |
         git config --global url."git@github.com:".insteadOf "https://github.com/"
     - uses: webfactory/ssh-agent@v0.8.0
       with:
         ssh-private-key: ${{ secrets.BRF2EBRF_REPO_KEY }}
-    - uses: actions/checkout@v3
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
