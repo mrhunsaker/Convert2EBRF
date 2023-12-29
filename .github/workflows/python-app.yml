@@ -18,7 +18,6 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - run: "git config --global url.\"git@github.com:\"insteadOf '"https://github.com/\""
     - uses: webfactory/ssh-agent@v0.8.0
       with:
         ssh-private-key: ${{ secrets.BRF2EBRF_REPO_KEY }}
