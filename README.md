@@ -2,6 +2,10 @@
 
 A GUI application for converting files to EBRF.
 
+## Status of EBRF support
+
+As there is no published version of the EBRF standard, currently this tool is unable to produce files which are guaranteed to comply with the final EBRF specification. Once a EBRF specification is published this tool will then recieve updates to produce files to comply with that specification.
+
 ## Developer information
 
 ### Building
