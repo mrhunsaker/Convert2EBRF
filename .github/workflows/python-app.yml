@@ -31,4 +31,4 @@ jobs:
     - name: Build exe
       run: |
         $env:PATH = "C:\msys64\usr\bin;$env:PATH"
-        pdm build_exe
+        pdm build_exe --assume-yes-for-downloads
