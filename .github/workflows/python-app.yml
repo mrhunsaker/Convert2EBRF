@@ -32,3 +32,8 @@ jobs:
       run: |
         $env:PATH = "C:\msys64\usr\bin;$env:PATH"
         pdm build_exe --assume-yes-for-downloads
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: convert2ebrf-dist
+        path: Convert2EBRF.dist
