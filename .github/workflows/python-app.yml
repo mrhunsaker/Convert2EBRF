@@ -29,4 +29,6 @@ jobs:
         pip install pdm
         pdm install
     - name: Build exe
-      run: pdm build_exe
+      run: |
+        $env:PATH = "C:\msys64\usr\bin;$env:PATH"
+        pdm build_exe
