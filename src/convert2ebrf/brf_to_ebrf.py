@@ -118,7 +118,7 @@ class ConversionGeneralSettingsWidget(QWidget):
             settings = QSettings()
             default_dir = settings.value(_LAST_DIR_SETTING_KEY, str(Path.home()))
             save_path = QFileDialog.get_save_file_name(
-                parent=x, dir=default_dir, filter="eBraille Files (*.ebrf)",
+                parent=x, dir=default_dir, filter="eBraille Files (*.zip)",
                 options=QFileDialog.Option.DontConfirmOverwrite
             )[0]
             if save_path:
